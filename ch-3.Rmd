@@ -1,0 +1,57 @@
+---
+title: "Basic reactivity"
+author: "Howard Baek"
+date: "11/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 3.3.6 Exercises
+
+1.
+
+```{r}
+server1 <- function(input, output, server) {
+  input$greeting <- renderText(paste0("Hello ", name))
+}
+```
+
+- `input$greeting` is wrong. It should be `output$greeting`
+- Inside `renderText`, it should be `input$name` instead of just `name`
+- Here is the fix:  `output$greeting <- renderText(paste0("Hello ", input$name))`
+
+
+```{r}
+server2 <- function(input, output, server) {
+  greeting <- paste0("Hello ", input$name)
+  output$greeting <- renderText(greeting)
+}
+```
+
+- You can make `greeting` a reactive by adding `reactive()`. Here is the fix: `greeting <- reactive(paste0("Hello ", input$name))`
+- Now that `greeting` is a reactive, you need to add parenthesis around it. Here is the fix: `output$greeting <- renderText(greeting())`
+
+```{r}
+server3 <- function(input, output, server) {
+  output$greting <- paste0("Hello", input$name)
+}
+```
+
+- Spelling error. We were missing a letter. 
+- We are also missing `renderText()`
+- Here is the fix: `output$greeting <- renderText(paste0("Hello ", input$name))`
+
+
+2. I will defer to https://mastering-shiny-solutions.org/basic-reactivity.html#solution-15
+
+3. 
+
+- I think this code will fail because of df[[input$var]]. This expression will fail. 
+- They are bad names for a reactive because they are built-in R functions. When you use `range()` or `var()`, other readers won't know if you are using a reactive or a built-in R function. 
+
+
+
+
