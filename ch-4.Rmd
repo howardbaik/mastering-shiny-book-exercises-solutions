@@ -12,13 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### 4.8 Exercises
 
-1. I will defer to https://mastering-shiny-solutions.org/case-study-er-injuries.html#exercise-5.8.1
+1. Solution at [Mastering Shiny Solutions 2021](https://mastering-shiny-solutions.org/case-study-er-injuries.html#exercise-5.8.1) 
 
 2. 
 ```{r}
 injuries <- vroom::vroom("neiss/injuries.tsv.gz")
 injuries
 
+# Original code
 injuries %>%
   mutate(diag = fct_lump(fct_infreq(diag), n = 5)) %>%
   group_by(diag) %>%
@@ -43,9 +44,9 @@ library(vroom)
 library(shiny)
 
 if (!exists("injuries")) {
-  injuries <- vroom::vroom("injuries.tsv.gz")
-  products <- vroom::vroom("products.tsv")
-  population <- vroom::vroom("population.tsv")
+  injuries <- vroom::vroom("neiss/injuries.tsv.gz")
+  products <- vroom::vroom("neiss/products.tsv")
+  population <- vroom::vroom("neiss/population.tsv")
 }
 
 ui <- fluidPage(
@@ -58,6 +59,7 @@ ui <- fluidPage(
            )
     ),
     column(2, selectInput("y", "Y axis", c("rate", "count"))),
+    # Input control that lets the user decide how many rows to show in the summary tables
     column(2, numericInput("num_rows", "Number of Rows", value = 5, min = 0, max = 6))
   ),
   #>>
@@ -129,4 +131,4 @@ shinyApp(ui, server)
 ```
 
 
-4. I will defer to https://mastering-shiny-solutions.org/case-study-er-injuries.html#exercise-5.8.4
+4. Solution at [Mastering Shiny Solutions 2021](https://mastering-shiny-solutions.org/case-study-er-injuries.html#exercise-5.8.4)
