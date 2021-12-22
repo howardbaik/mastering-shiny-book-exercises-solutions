@@ -11,66 +11,37 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## 9.4 Exercises
 
-1. From Gans and Gotti:
-
-```{r}
-library(ambient)
-noise <- ambient::noise_worley(c(100, 100))
-
-png("noise_plot.png")
-plot(as.raster(normalise(noise)))
-dev.off()
-```
-
-2. From Gans and Gotti:
-
-We can use the `fileInput` widget with the accept argument set to .csv to allow only the upload of csv files. In the server function we save the uploaded data to the the data reactive and use it to update `input$variable`, which displays variable (i.e. numeric data column) choices. Note that we put the `updateSelectInput` within an observe event because we need the `input$variable` to change if the user selects another file.
-
-
+2. 
 ```{r}
 library(shiny)
+# Increase max limit of size of uploaded file
+options(shiny.maxRequestSize = 10 * 1024^2)
 
 ui <- fluidPage(
-  sidebarLayout(
-    sidebarPanel(
-      fileInput("file", "Upload CSV", accept = ".csv"), # file widget
-      selectInput("variable", "Select Variable", choices = NULL) # select widget
-    ),
-    mainPanel(
-      verbatimTextOutput("results") # t-test results
-    )
-  )
+  # upload a csv file
+  fileInput("upload", NULL, 
+            buttonLabel = "Upload CSV", accept = ".csv"),
+  # select a variable
+  selectInput("var", "Select a variable", choices = NULL),
+  # show output of t.test()
+  verbatimTextOutput("t_test")
 )
 
-server <- function(input, output,session) {
-  
-  # get data from file
+server <- function(input, output, session) {
+  # uploaded dataset
   data <- reactive({
-    req(input$file)
-    
-    # as shown in the book, lets make sure the uploaded file is a csv
-    ext <- tools::file_ext(input$file$name)
-    validate(need(ext == "csv", "Invalid file. Please upload a .csv file"))
-    
-    dataset <- vroom::vroom(input$file$datapath, delim = ",")
-    
-    # let the user know if the data contains no numeric column
-    validate(need(ncol(dplyr::select_if(dataset, is.numeric)) != 0,
-                  "This dataset has no numeric columns."))
-    dataset
+    req(input$upload)
+    readr::read_csv(input$upload$datapath)
   })
-  
-  # create the select input based on the numeric columns in the dataframe
-  observeEvent(input$file, {
-    req(data())
-    num_cols <- dplyr::select_if(data(), is.numeric)
-    updateSelectInput(session, "variable", choices = colnames(num_cols))
+  # once user uploads data, fill in the available variables
+  observeEvent(data(), {
+    choices <- unique(colnames(data()))
+    updateSelectInput(inputId = "var", choices = choices) 
   })
-  
-  # print t-test results
-  output$results <- renderPrint({
-    if(!is.null(input$variable))
-      t.test(data()[input$variable])
+  # show output of t-test
+  output$t_test <- renderPrint({ 
+    req(input$var)
+    t.test(data()[[input$var]], mu = 0) 
   })
 }
 
@@ -78,73 +49,55 @@ shinyApp(ui, server)
 ```
 
 
-3. From Gans and Gotti:
+3. 
 
 ```{r}
 library(shiny)
-library(ggplot2)
+library(tidyverse)
 
 ui <- fluidPage(
-  tagList(
-    br(), br(),
-    column(4,
-           wellPanel(
-             fileInput("file", "Upload CSV", accept = ".csv"),
-             selectInput("variable", "Select Variable", choices = NULL),
-           ),
-           wellPanel(
-             radioButtons("extension", "Save As:",
-                          choices = c("png", "pdf", "svg"), inline = TRUE),
-             downloadButton("download", "Save Plot")
-           )
-    ),
-    column(8, plotOutput("results"))
-  )
+  # upload a csv file
+  fileInput("upload", NULL, 
+            buttonLabel = "Upload CSV", accept = ".csv"),
+  # select a variable
+  selectInput("var", "Select a variable", choices = NULL),
+  # show histogram
+  plotOutput("plot"),
+  radioButtons("ext", "Save As:",
+               choices = c("png", "pdf", "svg"), inline = TRUE),
+  # download histogram
+  downloadButton("download")
 )
 
-server <- function(input, output,session) {
-  
-  # get data from file
+server <- function(input, output, session) {
+  # uploaded dataset
   data <- reactive({
-    req(input$file)
-    
-    # as shown in the book, lets make sure the uploaded file is a csv
-    ext <- tools::file_ext(input$file$name)
-    validate(need(ext == "csv", "Invalid file. Please upload a .csv file"))
-    
-    dataset <- vroom::vroom(input$file$datapath, delim = ",")
-    
-    # let the user know if the data contains no numeric column
-    validate(need(ncol(dplyr::select_if(dataset, is.numeric)) != 0,
-                  "This dataset has no numeric columns."))
-    dataset
+    req(input$upload)
+    read_csv(input$upload$datapath)
   })
-  
-  # create the select input based on the numeric columns in the dataframe
-  observeEvent( input$file, {
-    req(data())
-    num_cols <- dplyr::select_if(data(), is.numeric)
-    updateSelectInput(session, "variable", choices = colnames(num_cols))
+  # once user uploads data, fill in the available variables
+  observeEvent(data(), {
+    choices <- unique(colnames(data()))
+    updateSelectInput(inputId = "var", choices = choices) 
   })
-  
-  # plot histogram
+  # create reactive plot 
   plot_output <- reactive({
-    req(!is.null(input$variable))
-    
+    req(input$var)
     ggplot(data()) +
-      aes_string(x = input$variable) +
-      geom_histogram()
+      geom_histogram(aes(.data[[input$var]]))
   })
-  
-  output$results <- renderPlot(plot_output())
-  
-  # save histogram using downloadHandler and plot output type
+  # show histogram
+  output$plot <- renderPlot({
+    req(input$var)
+    plot_output()
+  })
+  # download 
   output$download <- downloadHandler(
     filename = function() {
-      paste("histogram", input$extension, sep = ".")
-    },
-    content = function(file){
-      ggsave(file, plot_output(), device = input$extension)
+      paste("histogram", input$ext, sep = ".")
+    }, 
+    content = function(file) {
+      ggsave(file, plot_output(), device = input$ext)
     }
   )
 }
@@ -154,7 +107,7 @@ shinyApp(ui, server)
 
 
 
-4. From Gans and Gotti:
+4. From [Mastering Shiny Solutions 2021](https://mastering-shiny-solutions.org/uploads-and-downloads.html#exercise-9.4.4):
 ```{r}
 library(shiny)
 library(brickr)
@@ -180,18 +133,18 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-
+  
   imageFile <- reactive({
     if(!is.null(input$myFile))
       png::readPNG(input$myFile$datapath)
   })
-
+  
   output$result <- renderPlot({
     req(imageFile())
-
+    
     id <- notify("Transforming image...")
     on.exit(removeNotification(id), add = TRUE)
-
+    
     imageFile() %>%
       image_to_mosaic(img_size = input$size, color_palette = input$color) %>%
       build_mosaic()
@@ -202,5 +155,5 @@ shinyApp(ui, server)
 ```
 
 
-5. Not sure how to answer this. I don't think `janitor::make_clean_names()` is re-run when input$empty changes.
+5. Not sure
 
