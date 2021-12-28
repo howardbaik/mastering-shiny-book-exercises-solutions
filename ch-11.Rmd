@@ -84,3 +84,27 @@ shinyApp(ui, server, enableBookmarking = "server")
 
 `readRDS("shiny_bookmarks/cf6669ac8bfa4888/input.rds")` gives me a list with one dataframe, upload, with the name, size, type, and datapath of the uploaded datasets. Also, the uploaded datasets are saved inside shiny_bookmarks as `0.csv` and `1.csv`.
 
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  numericInput("x", "x", value = 10),
+  numericInput("y", "y", value = 1),
+  numericInput("z", "z", value = 1),
+  
+  textOutput("a")
+)
+
+server <- function(input, output, session) {
+  sum <- reactive(input$x + input$y + input$z)
+  prod <- reactive(input$x * input$y * input$z)
+  division <- reactive(prod() / sum())
+  
+  output$a <- renderText(division())
+}
+
+shinyApp(ui, server)
+```
+
+

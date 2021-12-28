@@ -1,0 +1,23 @@
+---
+title: "Untitled"
+author: "Howard Baek"
+date: "12/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 14.4.5 Exercises
+
+![](img/reactive-graph.png)
+
+1. Reactives are not run because there are no outputs. Server function only contains inputs and reactive expressions.
+
+2. Not sure
+
+3. When we start the session, `y` would not exist and thus `y()` would return an error since `y` is a reactive expression that consists of itself.
+
+
